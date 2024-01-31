@@ -59,10 +59,11 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun LazyColumnRange(viewModel: MainViewModel = MainViewModel()) {
+fun LazyColumnRange() {
+    val viewModel = remember { MainViewModel() }
     val messages by viewModel.uiState.collectAsState()
 
-    var textFieldValue by rememberSaveable { mutableStateOf("") }
+    var textFieldValue by remember { mutableStateOf("") }
 
     Column {
         Box(
@@ -91,7 +92,6 @@ fun LazyColumnRange(viewModel: MainViewModel = MainViewModel()) {
                         .height(50.dp)
                         .wrapContentHeight(Alignment.CenterVertically)
                         .clickable {
-
                             if (textFieldValue.isNotEmpty()) {
                                 viewModel.sendMessage(textFieldValue)
                                 textFieldValue = ""

@@ -17,7 +17,10 @@ class MainViewModel : ViewModel() {
 
     fun sendMessage(text: String) = viewModelScope.launch(Dispatchers.IO) {
         messages.add(MessageUi(text = text, iSendThis = Random.nextBoolean()))
+        val index = messages.size - 1
         _uiState.value = messages.toList()
+        delay(3000)
+        readMessage(index)
     }
 
     private fun readMessage(position: Int) {
