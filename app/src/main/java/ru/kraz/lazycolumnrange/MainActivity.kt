@@ -6,16 +6,16 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -57,7 +57,7 @@ fun LazyColumnRange(viewModel: MainViewModel = MainViewModel()) {
         ) {
             itemsIndexed(list) { index, item ->
                 Element(item) {
-                    viewModel.set(index)
+                    viewModel.upload(index)
                 }
             }
         }
@@ -65,22 +65,33 @@ fun LazyColumnRange(viewModel: MainViewModel = MainViewModel()) {
 }
 
 @Composable
-fun Element(item: ItemUi, setState: () -> Unit) {
-
+fun Element(item: ItemUi, upload: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { setState() }
-            .background(if (item.selected) Color.LightGray else Color.White)
+            .height(350.dp)
             .padding(16.dp)
     ) {
-        Text(
-            text = item.text,
-            Modifier
+        Box(
+            modifier = Modifier
                 .fillMaxSize()
-                .background(if (item.selected) Color.LightGray else Color.White),
-            color = Color.Black
-        )
+                .background(if (item.upload) Color.Green else Color.White)
+                .clickable { if (!item.upload) upload() }
+        ) {
+            Text(
+                text = item.text,
+                Modifier
+                    .wrapContentSize(),
+                color = Color.Black
+            )
+            if (item.upload)
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .width(50.dp)
+                        .height(50.dp)
+                        .align(Alignment.BottomEnd)
+                )
+        }
     }
 }
 
