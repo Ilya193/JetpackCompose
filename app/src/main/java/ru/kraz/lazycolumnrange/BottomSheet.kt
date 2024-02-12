@@ -54,7 +54,7 @@ fun BottomSheet(dismiss: () -> Unit) {
     val context = LocalContext.current
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
-    val images = remember { mutableStateListOf<Image>() }
+    val images = remember { mutableStateListOf<ImageUi>() }
     var count by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) {
@@ -67,10 +67,10 @@ fun BottomSheet(dismiss: () -> Unit) {
                 null
             )?.use { cursor ->
                 var id = 0
-                val temp = mutableListOf<Image>()
+                val temp = mutableListOf<ImageUi>()
                 while (cursor.moveToNext()) {
                     val data = cursor.getColumnIndex(MediaStore.Images.Media.DATA)
-                    temp.add(Image(id = id++, path = cursor.getString(data)))
+                    temp.add(ImageUi(id = id++, path = cursor.getString(data)))
                 }
                 images.addAll(temp.reversed())
             }
