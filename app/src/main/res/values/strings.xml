@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">LazyColumnRange</string>
     <string name="selected_images">Выбрано картинок: %1$s</string>
+    <string name="select_image">Выбрать картинку</string>
 </resources>
