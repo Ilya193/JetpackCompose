@@ -61,6 +61,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import ru.kraz.lazycolumnrange.ui.theme.LazyColumnRangeTheme
 
@@ -127,7 +129,7 @@ fun BottomSheet(dismiss: () -> Unit) {
     var count by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) {
-        scope.launch {
+        scope.launch(Dispatchers.IO) {
             context.contentResolver.query(
                 MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
                 arrayOf(MediaStore.Images.ImageColumns.DATA),
