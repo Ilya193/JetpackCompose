@@ -144,7 +144,6 @@ fun BottomSheet(dismiss: () -> Unit) {
                     temp.add(Image(id = id++, path = cursor.getString(data)))
                 }
                 images.addAll(temp.reversed())
-                println("s149 ${images.size}")
             }
         }
     }
