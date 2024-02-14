@@ -4,6 +4,7 @@ import android.provider.MediaStore
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -36,6 +37,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -137,6 +139,10 @@ fun BottomSheet(dismiss: () -> Unit) {
                             if (item.selected) colorResource(R.color.blue) else Color.Transparent,
                             animationSpec = tween(150, easing = LinearEasing), label = ""
                         )
+                        val alphaValue: Float by animateFloatAsState(
+                            targetValue = if (item.selected) 1f else 0f,
+                            animationSpec = tween(150, easing = LinearEasing), label = ""
+                        )
                         AsyncImage(
                             modifier = Modifier
                                 .fillMaxSize(),
@@ -158,7 +164,13 @@ fun BottomSheet(dismiss: () -> Unit) {
                                     color = bgColor
                                 )
                                 .align(Alignment.TopEnd)
-                        )
+                        ) {
+                            Image(
+                                modifier = Modifier.alpha(alphaValue),
+                                painter = painterResource(id = R.drawable.ic_done),
+                                contentDescription = null
+                            )
+                        }
                     }
                 }
             }
