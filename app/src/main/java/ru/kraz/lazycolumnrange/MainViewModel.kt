@@ -74,7 +74,17 @@ class MainViewModel(
                     filterMode = true,
                     nothingFound = todos.isEmpty()
                 )
-                else TodosUiState.Todos(todos = displayTodos.toList())
+                else {
+                    if (filtered.isNotEmpty()) {
+                        TodosUiState.Filter(
+                            todos = todos.toList(),
+                            filtered = filtered,
+                            filterMode = false,
+                            nothingFound = todos.isEmpty()
+                        )
+                    }
+                    else TodosUiState.Todos(todos = displayTodos.toList())
+                }
         }
 
     private fun applyFilter(filtered: List<Int>) = viewModelScope.launch(dispatcher) {
@@ -89,11 +99,18 @@ class MainViewModel(
                     false,
                     displayTodos.isEmpty()
                 )
-            } else {
+            } else if (filter == 2) {
                 val filteredTodos = mutableListOf<TodoCloud>()
                 displayTodos.forEach {
                     if (it.selected) filteredTodos.add(it)
                 }
+                _uiState.value = TodosUiState.Filter(
+                    todos = filteredTodos.toList(),
+                    filtered,
+                    false,
+                    filteredTodos.isEmpty()
+                )
+            } else {
                 _uiState.value = TodosUiState.Filter(
                     todos = filteredTodos.toList(),
                     filtered,

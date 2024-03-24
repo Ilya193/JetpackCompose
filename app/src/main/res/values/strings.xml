@@ -9,4 +9,5 @@
     <string name="ordinary">Обычные</string>
     <string name="favorite">Избранные</string>
     <string name="apply">Применить</string>
+    <string name="favorite_first">Сначала избранные</string>
 </resources>
