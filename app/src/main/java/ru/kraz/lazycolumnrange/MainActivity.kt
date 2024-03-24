@@ -93,10 +93,39 @@ fun Content(viewModel: MainViewModel = koinViewModel()) {
         is TodosUiState.Todos -> {
             TodosContent(
                 state.todos,
-                filterMode = { viewModel.action(Action.FilterMode(true, state.todos)) },
+                filterMode = {
+                    viewModel.action(Action.FilterMode(true, state.todos))
+                },
                 searchMode = { viewModel.action(Action.SearchMode) },
-                clickTodo = { viewModel.action(Action.ClickTodo(it)) }
+                clickTodo = { viewModel.action(Action.ClickTodo(it)) },
+                longClickTodo = { viewModel.action((Action.TodosWithDetailsTodo(it))) }
             )
+        }
+
+        is TodosUiState.TodosWithDetailsTodo -> {
+            Box(modifier = Modifier.fillMaxSize()) {
+                TodosContent(
+                    state.todos,
+                    filterMode = { viewModel.action(Action.FilterMode(true, state.todos)) },
+                    searchMode = { viewModel.action(Action.SearchMode) },
+                    clickTodo = { viewModel.action(Action.ClickTodo(it)) },
+                    longClickTodo = { viewModel.action((Action.TodosWithDetailsTodo(it))) }
+                )
+
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(50.dp).background(Color.White)
+                        .align(Alignment.BottomCenter)
+                ) {
+                    Text(modifier = Modifier.align(Alignment.Center), text = state.todo.title)
+                    Image(
+                        modifier = Modifier.align(Alignment.TopEnd).clickable {
+                            viewModel.action(Action.CancelDetails)
+                        },
+                        painter = painterResource(R.drawable.ic_close),
+                        contentDescription = null
+                    )
+                }
+            }
         }
 
         is TodosUiState.Filter -> {
@@ -156,7 +185,7 @@ fun Content(viewModel: MainViewModel = koinViewModel()) {
                         itemsIndexed(
                             items = state.todos,
                             key = { index, item -> item.id }) { index, item ->
-                            TodoItem(item) {}
+                            TodoItem(item, click = {}, longClick = {})
                         }
                     }
                 }
@@ -216,7 +245,7 @@ fun Content(viewModel: MainViewModel = koinViewModel()) {
                         itemsIndexed(
                             items = state.todos,
                             key = { index, item -> item.id }) { index, item ->
-                            TodoItem(item) {}
+                            TodoItem(item, click = {}, longClick = {})
                         }
                     }
                 }

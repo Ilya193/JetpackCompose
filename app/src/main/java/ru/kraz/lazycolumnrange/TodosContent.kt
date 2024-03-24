@@ -1,7 +1,9 @@
 package ru.kraz.lazycolumnrange
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,6 +31,7 @@ fun TodosContent(
     filterMode: () -> Unit,
     searchMode: () -> Unit,
     clickTodo: (Int) -> Unit,
+    longClickTodo: (Int) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -53,22 +56,25 @@ fun TodosContent(
             itemsIndexed(
                 items = todos,
                 key = { index, item -> item.id }) { index, item ->
-                TodoItem(item) {
+                TodoItem(item, click = {
                     clickTodo(index)
-                }
+                }, longClick = {
+                    longClickTodo(index)
+                } )
             }
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun TodoItem(item: TodoCloud, click: () -> Unit) {
+fun TodoItem(item: TodoCloud, click: () -> Unit, longClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(65.dp)
             .padding(8.dp)
-            .clickable(onClick = click)
+            .combinedClickable(onClick = click, onLongClick = longClick)
     ) {
         Text(
             modifier = Modifier.align(Alignment.TopStart),

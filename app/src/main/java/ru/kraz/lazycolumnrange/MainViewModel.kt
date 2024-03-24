@@ -41,6 +41,8 @@ class MainViewModel(
             is Action.FilterMode -> filterMode(action.mode, action.todos, action.filtered)
             is Action.ApplyFilter -> applyFilter(action.filtered)
             is Action.Todos -> todos()
+            is Action.TodosWithDetailsTodo -> todosWithDetailsTodo(action.index)
+            is Action.CancelDetails -> cancelDetails()
         }
     }
 
@@ -125,6 +127,15 @@ class MainViewModel(
     private fun todos() = viewModelScope.launch(dispatcher) {
         _uiState.value = TodosUiState.Todos(todos = displayTodos.toList())
     }
+
+    private fun todosWithDetailsTodo(index: Int) = viewModelScope.launch(dispatcher) {
+        val data = displayTodos.toList()
+        _uiState.value = TodosUiState.TodosWithDetailsTodo(todos = data, todo = data[index])
+    }
+
+    private fun cancelDetails() = viewModelScope.launch(dispatcher) {
+        _uiState.value = TodosUiState.Todos(todos = displayTodos.toList())
+    }
 }
 
 sealed interface Action {
@@ -139,6 +150,9 @@ sealed interface Action {
 
     data class ApplyFilter(val filtered: List<Int>) : Action
     data object Todos : Action
+
+    data class TodosWithDetailsTodo(val index: Int) : Action
+    data object CancelDetails : Action
 }
 
 sealed interface TodosUiState {
@@ -148,6 +162,11 @@ sealed interface TodosUiState {
 
     data class Todos(
         val todos: List<TodoCloud>
+    ) : TodosUiState
+
+    data class TodosWithDetailsTodo(
+        val todos: List<TodoCloud>,
+        val todo: TodoCloud
     ) : TodosUiState
 
     data class Search(
