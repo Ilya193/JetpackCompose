@@ -307,6 +307,7 @@ fun BottomSheet(initial: List<Int>, apply: (List<Int>) -> Unit) {
                 val filtered = mutableListOf<Int>()
                 if (isCheckedOrdinary) filtered.add(1)
                 if (isCheckedFavorite) filtered.add(2)
+                if (isCheckedFavoriteFirst) filtered.add(3)
                 apply(filtered)
             }) {
             Text(text = stringResource(R.string.apply))

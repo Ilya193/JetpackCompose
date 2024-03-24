@@ -111,6 +111,7 @@ class MainViewModel(
                     filteredTodos.isEmpty()
                 )
             } else {
+                val filteredTodos = displayTodos.sortedBy { !it.selected }
                 _uiState.value = TodosUiState.Filter(
                     todos = filteredTodos.toList(),
                     filtered,
