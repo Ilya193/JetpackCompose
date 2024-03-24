@@ -1,3 +1,12 @@
 <resources>
     <string name="app_name">LazyColumnRange</string>
+    <string name="error">Произошла ошибка</string>
+    <string name="retry">Попробовать снова</string>
+    <string name="input_todo">Введите текст из заметки</string>
+    <string name="todo">Заметка</string>
+    <string name="nothing_found">Ничего не найдено</string>
+    <string name="filter_selection">Выбор фильтра</string>
+    <string name="ordinary">Обычные</string>
+    <string name="favorite">Избранные</string>
+    <string name="apply">Применить</string>
 </resources>
