@@ -12,13 +12,13 @@ import kotlinx.coroutines.launch
 
 class MainViewModel(
     private val repository: Repository,
-    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
 
     private var todos = mutableListOf<TodoCloud>()
     private var displayTodos = mutableListOf<TodoCloud>()
 
-    private val _uiState = MutableStateFlow<TodosUiState>(TodosUiState.Loading)
+    private val _uiState = MutableStateFlow<TodosUiState>(TodosUiState(isLoading = true))
     val uiState: StateFlow<TodosUiState> get() = _uiState.asStateFlow()
 
     fun fetch() = viewModelScope.launch(dispatcher) {
@@ -26,9 +26,9 @@ class MainViewModel(
             try {
                 todos = repository.fetchTodos().toMutableList()
                 displayTodos = todos.toMutableList()
-                _uiState.value = TodosUiState.Todos(todos.toList())
+                _uiState.value = TodosUiState(todos = displayTodos.toList())
             } catch (e: Exception) {
-                _uiState.value = TodosUiState.Error
+                _uiState.value = TodosUiState(isError = true)
             }
         }
     }
@@ -38,7 +38,7 @@ class MainViewModel(
             is Action.SearchMode -> searchMode()
             is Action.InputTodo -> inputTodo(action.todo)
             is Action.ClickTodo -> clickTodo(action.index)
-            is Action.FilterMode -> filterMode(action.mode, action.todos, action.filtered)
+            is Action.FilterMode -> filterMode(action.mode, action.filtered)
             is Action.ApplyFilter -> applyFilter(action.filtered)
             is Action.Todos -> todos()
             is Action.TodosWithDetailsTodo -> todosWithDetailsTodo(action.index)
@@ -47,95 +47,117 @@ class MainViewModel(
     }
 
     private fun searchMode() = viewModelScope.launch(dispatcher) {
-        _uiState.value = TodosUiState.Search(emptyList(), false)
+        _uiState.value = TodosUiState(mode = Mode.Search)
     }
 
     private fun inputTodo(todo: String) = viewModelScope.launch(dispatcher) {
-        val filteredTodos = mutableListOf<TodoCloud>()
-        displayTodos.forEach {
-            if (todo in it.title) filteredTodos.add(it)
-        }
-        _uiState.value =
-            TodosUiState.Search(
-                todos = filteredTodos.toList(),
-                nothingFound = filteredTodos.isEmpty()
-            )
-    }
-
-    private fun clickTodo(index: Int) = viewModelScope.launch(dispatcher) {
-        displayTodos[index] = displayTodos[index].copy(selected = !displayTodos[index].selected)
-        _uiState.value = TodosUiState.Todos(displayTodos.toList())
-    }
-
-    private fun filterMode(mode: Boolean, todos: List<TodoCloud>, filtered: List<Int>) =
-        viewModelScope.launch(dispatcher) {
-            _uiState.value =
-                if (mode) TodosUiState.Filter(
-                    todos = todos.toList(),
-                    filtered = filtered,
-                    filterMode = true,
-                    nothingFound = todos.isEmpty()
+        _uiState.update {
+            if (todo.isEmpty())
+                it.copy(
+                    todos = emptyList(),
+                    nothingFound = NothingFound.Init
                 )
-                else {
-                    if (filtered.isNotEmpty()) {
-                        TodosUiState.Filter(
-                            todos = todos.toList(),
-                            filtered = filtered,
-                            filterMode = false,
-                            nothingFound = todos.isEmpty()
-                        )
-                    }
-                    else TodosUiState.Todos(todos = displayTodos.toList())
-                }
-        }
-
-    private fun applyFilter(filtered: List<Int>) = viewModelScope.launch(dispatcher) {
-        if (filtered.isEmpty()) {
-            _uiState.value = TodosUiState.Todos(todos = displayTodos.toList())
-        } else {
-            val filter = filtered[0]
-            if (filter == 1) {
-                _uiState.value = TodosUiState.Filter(
-                    todos = displayTodos.toList(),
-                    filtered,
-                    false,
-                    displayTodos.isEmpty()
-                )
-            } else if (filter == 2) {
+            else {
                 val filteredTodos = mutableListOf<TodoCloud>()
                 displayTodos.forEach {
-                    if (it.selected) filteredTodos.add(it)
+                    if (todo in it.title) filteredTodos.add(it)
                 }
-                _uiState.value = TodosUiState.Filter(
+
+                it.copy(
                     todos = filteredTodos.toList(),
-                    filtered,
-                    false,
-                    filteredTodos.isEmpty()
-                )
-            } else {
-                val filteredTodos = displayTodos.sortedBy { !it.selected }
-                _uiState.value = TodosUiState.Filter(
-                    todos = filteredTodos.toList(),
-                    filtered,
-                    false,
-                    filteredTodos.isEmpty()
+                    nothingFound = if (filteredTodos.isEmpty()) NothingFound.Search else NothingFound.Init
                 )
             }
         }
     }
 
-    private fun todos() = viewModelScope.launch(dispatcher) {
-        _uiState.value = TodosUiState.Todos(todos = displayTodos.toList())
+    private fun clickTodo(index: Int) = viewModelScope.launch(dispatcher) {
+        val item = displayTodos[index]
+        displayTodos[index] = item.copy(selected = !item.selected)
+        _uiState.update { it.copy(todos = displayTodos.toList()) }
+    }
+
+    private fun filterMode(show: Boolean, filtered: List<Int>) {
+        _uiState.update {
+            if (show) {
+                it.copy(
+                    mode = Mode.Filter(true),
+                    filtered = filtered,
+                    nothingFound = if (it.todos.isEmpty()) NothingFound.Filter else NothingFound.Init
+                )
+            } else {
+                if (filtered.isNotEmpty())
+                    it.copy(
+                        mode = Mode.Filter(false),
+                        filtered = filtered,
+                        nothingFound = if (it.todos.isEmpty()) NothingFound.Filter else NothingFound.Init
+                    )
+                else {
+                    TodosUiState(todos = displayTodos.toList())
+                }
+            }
+        }
+    }
+
+    private fun applyFilter(filtered: List<Int>) = viewModelScope.launch(dispatcher) {
+        if (filtered.isEmpty()) {
+            _uiState.value = TodosUiState(todos = displayTodos.toList())
+        }
+        else {
+            var todos = mutableListOf<TodoCloud>()
+            when (filtered[0]) {
+                1 -> todos = displayTodos.toMutableList()
+                2 -> {
+                    displayTodos.forEach {
+                        if (it.selected) todos.add(it)
+                    }
+                }
+                else -> todos = displayTodos.sortedBy { !it.selected }.toMutableList()
+            }
+            _uiState.value = TodosUiState(
+                todos = todos,
+                filtered = filtered,
+                mode = Mode.Filter(false),
+                nothingFound = if (todos.isEmpty()) NothingFound.Filter else NothingFound.Init
+            )
+        }
+    }
+
+    private fun todos() = viewModelScope.launch {
+        _uiState.value = TodosUiState(todos = displayTodos.toList())
     }
 
     private fun todosWithDetailsTodo(index: Int) = viewModelScope.launch(dispatcher) {
         val data = displayTodos.toList()
-        _uiState.value = TodosUiState.TodosWithDetailsTodo(todos = data, todo = data[index])
+        _uiState.value = TodosUiState(todos = data, detailsTodo = data[index])
     }
 
     private fun cancelDetails() = viewModelScope.launch(dispatcher) {
-        _uiState.value = TodosUiState.Todos(todos = displayTodos.toList())
+        _uiState.value = TodosUiState(todos = displayTodos.toList())
     }
+}
+
+data class TodosUiState(
+    val todos: List<TodoCloud> = emptyList(),
+    val todo: String = "",
+    val mode: Mode = Mode.Init,
+    val detailsTodo: TodoCloud? = null,
+    val filtered: List<Int> = emptyList(),
+    val nothingFound: NothingFound = NothingFound.Init,
+    val isLoading: Boolean = false,
+    val isError: Boolean = false,
+)
+
+sealed interface Mode {
+    data object Search : Mode
+    data class Filter(val show: Boolean) : Mode
+    data object Init : Mode
+}
+
+sealed interface NothingFound {
+    data object Search : NothingFound
+    data object Filter : NothingFound
+    data object Init : NothingFound
 }
 
 sealed interface Action {
@@ -145,7 +167,7 @@ sealed interface Action {
     data class FilterMode(
         val mode: Boolean,
         val todos: List<TodoCloud> = emptyList(),
-        val filtered: List<Int> = emptyList()
+        val filtered: List<Int> = emptyList(),
     ) : Action
 
     data class ApplyFilter(val filtered: List<Int>) : Action
@@ -153,31 +175,4 @@ sealed interface Action {
 
     data class TodosWithDetailsTodo(val index: Int) : Action
     data object CancelDetails : Action
-}
-
-sealed interface TodosUiState {
-    data object Loading : TodosUiState
-
-    data object Error : TodosUiState
-
-    data class Todos(
-        val todos: List<TodoCloud>
-    ) : TodosUiState
-
-    data class TodosWithDetailsTodo(
-        val todos: List<TodoCloud>,
-        val todo: TodoCloud
-    ) : TodosUiState
-
-    data class Search(
-        val todos: List<TodoCloud>,
-        val nothingFound: Boolean
-    ) : TodosUiState
-
-    data class Filter(
-        val todos: List<TodoCloud>,
-        val filtered: List<Int> = emptyList(),
-        val filterMode: Boolean,
-        val nothingFound: Boolean
-    ) : TodosUiState
 }

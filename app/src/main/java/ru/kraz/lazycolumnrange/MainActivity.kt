@@ -81,134 +81,10 @@ fun Content(viewModel: MainViewModel = koinViewModel()) {
         viewModel.fetch()
     }
 
-    when (val state = uiState) {
-        is TodosUiState.Loading -> {
-            LoadingContent()
-        }
-
-        is TodosUiState.Error -> {
-            ErrorContent { viewModel.fetch() }
-        }
-
-        is TodosUiState.Todos -> {
-            TodosContent(
-                state.todos,
-                filterMode = {
-                    viewModel.action(Action.FilterMode(true, state.todos))
-                },
-                searchMode = { viewModel.action(Action.SearchMode) },
-                clickTodo = { viewModel.action(Action.ClickTodo(it)) },
-                longClickTodo = { viewModel.action((Action.TodosWithDetailsTodo(it))) }
-            )
-        }
-
-        is TodosUiState.TodosWithDetailsTodo -> {
-            Box(modifier = Modifier.fillMaxSize()) {
-                TodosContent(
-                    state.todos,
-                    filterMode = { viewModel.action(Action.FilterMode(true, state.todos)) },
-                    searchMode = { viewModel.action(Action.SearchMode) },
-                    clickTodo = { viewModel.action(Action.ClickTodo(it)) },
-                    longClickTodo = { viewModel.action((Action.TodosWithDetailsTodo(it))) }
-                )
-
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(50.dp).background(Color.White)
-                        .align(Alignment.BottomCenter)
-                ) {
-                    Text(modifier = Modifier.align(Alignment.Center), text = state.todo.title)
-                    Image(
-                        modifier = Modifier.align(Alignment.TopEnd).clickable {
-                            viewModel.action(Action.CancelDetails)
-                        },
-                        painter = painterResource(R.drawable.ic_close),
-                        contentDescription = null
-                    )
-                }
-            }
-        }
-
-        is TodosUiState.Filter -> {
-            Scaffold(
-                topBar = {
-                    TopAppBar(navigationIcon = {
-                        Box(
-                            modifier = Modifier.width(40.dp)
-                        ) {
-                            if (state.filtered.isNotEmpty()) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(17.dp)
-                                        .offset(y = (-10).dp)
-                                        .clip(CircleShape)
-                                        .align(Alignment.TopEnd).background(Color.Red),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = state.filtered.size.toString(),
-                                        style = TextStyle(
-                                            color = Color.White,
-                                            fontSize = 11.sp
-                                        ),
-                                    )
-                                }
-                            }
-
-                            Image(
-                                modifier = Modifier.clickable {
-                                    viewModel.action(
-                                        Action.FilterMode(
-                                            true,
-                                            state.todos,
-                                            state.filtered
-                                        )
-                                    )
-                                },
-                                painter = painterResource(id = R.drawable.filter_list),
-                                contentDescription = null
-                            )
-                        }
-
-                    }, title = {
-                        Text(text = "TopAppBar")
-                    }, actions = {
-                        Image(modifier = Modifier.clickable {
-                            viewModel.action(Action.SearchMode)
-                        }, imageVector = Icons.Filled.Search, contentDescription = null)
-                    })
-                }
-            ) { padding ->
-                if (state.nothingFound) {
-                    InformationText(text = stringResource(R.string.nothing_found))
-                } else {
-                    LazyColumn(modifier = Modifier.padding(padding)) {
-                        itemsIndexed(
-                            items = state.todos,
-                            key = { index, item -> item.id }) { index, item ->
-                            TodoItem(item, click = {}, longClick = {})
-                        }
-                    }
-                }
-
-                if (state.filterMode) {
-                    ModalBottomSheet(onDismissRequest = {
-                        viewModel.action(
-                            Action.FilterMode(
-                                false,
-                                filtered = state.filtered,
-                                todos = state.todos
-                            )
-                        )
-                    }) {
-                        BottomSheet(state.filtered) {
-                            viewModel.action(Action.ApplyFilter(it))
-                        }
-                    }
-                }
-            }
-        }
-
-        is TodosUiState.Search -> {
+    if (uiState.isLoading) LoadingContent()
+    else if (uiState.isError) ErrorContent { }
+    else {
+        if (uiState.mode is Mode.Search) {
             Scaffold(
                 topBar = {
                     TopAppBar(navigationIcon = {
@@ -236,16 +112,127 @@ fun Content(viewModel: MainViewModel = koinViewModel()) {
                     })
                 }
             ) { padding ->
-                if (state.nothingFound) {
+                if (uiState.nothingFound is NothingFound.Search) {
                     InformationText(text = stringResource(R.string.nothing_found))
-                } else if (state.todos.isEmpty()) {
+                } else if (uiState.todos.isEmpty()) {
                     InformationText(text = stringResource(id = R.string.input_todo))
                 } else {
                     LazyColumn(modifier = Modifier.padding(padding)) {
                         itemsIndexed(
-                            items = state.todos,
+                            items = uiState.todos,
                             key = { index, item -> item.id }) { index, item ->
                             TodoItem(item, click = {}, longClick = {})
+                        }
+                    }
+                }
+            }
+        } else if (uiState.mode is Mode.Filter) {
+            Scaffold(
+                topBar = {
+                    TopAppBar(navigationIcon = {
+                        Box(
+                            modifier = Modifier.width(40.dp)
+                        ) {
+                            if (uiState.filtered.isNotEmpty()) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(17.dp)
+                                        .offset(y = (-10).dp)
+                                        .clip(CircleShape)
+                                        .align(Alignment.TopEnd).background(Color.Red),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = uiState.filtered.size.toString(),
+                                        style = TextStyle(
+                                            color = Color.White,
+                                            fontSize = 11.sp
+                                        ),
+                                    )
+                                }
+                            }
+
+                            Image(
+                                modifier = Modifier.clickable {
+                                    viewModel.action(
+                                        Action.FilterMode(
+                                            true,
+                                            uiState.todos,
+                                            uiState.filtered
+                                        )
+                                    )
+                                },
+                                painter = painterResource(id = R.drawable.filter_list),
+                                contentDescription = null
+                            )
+                        }
+
+                    }, title = {
+                        Text(text = "TopAppBar")
+                    }, actions = {
+                        Image(modifier = Modifier.clickable {
+                            viewModel.action(Action.SearchMode)
+                        }, imageVector = Icons.Filled.Search, contentDescription = null)
+                    })
+                }
+            ) { padding ->
+                if (uiState.nothingFound is NothingFound.Filter) {
+                    InformationText(text = stringResource(R.string.nothing_found))
+                } else {
+                    LazyColumn(modifier = Modifier.padding(padding)) {
+                        itemsIndexed(
+                            items = uiState.todos,
+                            key = { index, item -> item.id }) { index, item ->
+                            TodoItem(item, click = {}, longClick = {})
+                        }
+                    }
+                }
+
+                if ((uiState.mode as Mode.Filter).show)
+                    ModalBottomSheet(onDismissRequest = {
+                        viewModel.action(
+                            Action.FilterMode(
+                                false,
+                                filtered = uiState.filtered,
+                                todos = uiState.todos
+                            )
+                        )
+                    }) {
+                        BottomSheet(uiState.filtered) {
+                            viewModel.action(Action.ApplyFilter(it))
+                        }
+                    }
+            }
+        } else {
+            if (uiState.todos.isNotEmpty()) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    TodosContent(
+                        uiState.todos,
+                        filterMode = {
+                            viewModel.action(
+                                Action.FilterMode(
+                                    mode = true,
+                                    filtered = uiState.filtered
+                                )
+                            )
+                        },
+                        searchMode = { viewModel.action(Action.SearchMode) },
+                        clickTodo = { viewModel.action(Action.ClickTodo(it)) },
+                        longClickTodo = { viewModel.action(Action.TodosWithDetailsTodo(it)) })
+
+                    uiState.detailsTodo?.let {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().height(50.dp).background(Color.White)
+                                .align(Alignment.BottomCenter)
+                        ) {
+                            Text(modifier = Modifier.align(Alignment.Center), text = it.title)
+                            Image(
+                                modifier = Modifier.align(Alignment.TopEnd).clickable {
+                                    viewModel.action(Action.CancelDetails)
+                                },
+                                painter = painterResource(R.drawable.ic_close),
+                                contentDescription = null
+                            )
                         }
                     }
                 }
