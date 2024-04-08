@@ -1,43 +1,37 @@
 package ru.kraz.lazycolumnrange
 
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextAlign
 import androidx.core.content.ContextCompat
-import com.google.android.gms.location.LocationServices
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import ru.kraz.lazycolumnrange.ui.theme.LazyColumnRangeTheme
 
 class MainActivity : ComponentActivity() {
@@ -58,30 +52,86 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun Content(viewModel: MainViewModel = MainViewModel()) {
-    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        println("s149 $it")
-    }
+    val permission =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
-        if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            permission.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
-        }
-        else {
-            val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+        context.locationChecker.collect {}
+    }
 
-            fusedLocationClient.lastLocation
-                .addOnSuccessListener { location: Location? ->
-                    if (location != null) {
-                        val latitude = location.latitude
-                        val longitude = location.longitude
-                        println("s149 $latitude $longitude")
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("geo:$latitude,$longitude")))
-                    }
+    var location by remember { mutableStateOf<Pair<Double, Double>?>(null) }
+
+    val locationManager = remember { context.getSystemService(Context.LOCATION_SERVICE) as LocationManager }
+    val locationListener = remember {
+        LocationListener {
+            location = Pair(it.latitude, it.longitude)
+        }
+    }
+
+    location?.let {
+        context.startActivity(
+            Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("geo:${it.first}, ${it.second}")
+            )
+        )
+        locationManager.removeUpdates(locationListener)
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier.align(Alignment.Center),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            if (location != null) location?.let {
+                Text("Долгота: ${it.first}, Широта: ${it.second}", textAlign = TextAlign.Center)
+            }
+            else Text("Здесь появится широта и долгота")
+            Button(onClick = {
+                if (ContextCompat.checkSelfPermission(
+                        context,
+                        android.Manifest.permission.ACCESS_FINE_LOCATION
+                    ) != PackageManager.PERMISSION_GRANTED
+                ) {
+                    permission.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                } else {
+                    locationManager.requestLocationUpdates(
+                        LocationManager.GPS_PROVIDER,
+                        0,
+                        0f,
+                        locationListener
+                    )
                 }
-                .addOnFailureListener { e ->
-                }
+            }) {
+                Text("Определить местоположение")
+            }
         }
     }
 }
+
+val Context.locationChecker: Flow<Pair<Double, Double>>
+    get() = callbackFlow {
+        if (ContextCompat.checkSelfPermission(
+                this@locationChecker,
+                android.Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            val locationManager = this@locationChecker.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            val locationListener = LocationListener {
+                     trySend(Pair(it.latitude, it.longitude))
+                }
+
+            locationManager.requestLocationUpdates(
+                LocationManager.GPS_PROVIDER,
+                0,
+                0f,
+                locationListener
+            )
+
+            awaitClose {
+                locationManager.removeUpdates(locationListener)
+            }
+        }
+    }
