@@ -1,8 +1,15 @@
 package ru.kraz.lazycolumnrange
 
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.location.Location
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContract
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -20,13 +27,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import com.google.android.gms.location.LocationServices
 import ru.kraz.lazycolumnrange.ui.theme.LazyColumnRangeTheme
 
 class MainActivity : ComponentActivity() {
@@ -38,7 +49,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    LazyColumnRange()
+                    Content()
                 }
             }
         }
@@ -46,59 +57,31 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun LazyColumnRange(viewModel: MainViewModel = MainViewModel()) {
-    val list by viewModel.uiState.collectAsState(initial = emptyList())
+fun Content(viewModel: MainViewModel = MainViewModel()) {
+    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        println("s149 $it")
+    }
 
-    Box(
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            itemsIndexed(list) { index, item ->
-                Element(item) {
-                    viewModel.upload(index)
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            permission.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+        else {
+            val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+
+            fusedLocationClient.lastLocation
+                .addOnSuccessListener { location: Location? ->
+                    if (location != null) {
+                        val latitude = location.latitude
+                        val longitude = location.longitude
+                        println("s149 $latitude $longitude")
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("geo:$latitude,$longitude")))
+                    }
                 }
-            }
+                .addOnFailureListener { e ->
+                }
         }
-    }
-}
-
-@Composable
-fun Element(item: ItemUi, upload: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(350.dp)
-            .padding(16.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(if (item.upload) Color.Green else Color.White)
-                .clickable { if (!item.upload) upload() }
-        ) {
-            Text(
-                text = item.text,
-                Modifier
-                    .wrapContentSize(),
-                color = Color.Black
-            )
-            if (item.upload)
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .width(50.dp)
-                        .height(50.dp)
-                        .align(Alignment.BottomEnd)
-                )
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    LazyColumnRangeTheme {
-        LazyColumnRange()
     }
 }
