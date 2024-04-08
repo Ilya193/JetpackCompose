@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    LazyColumnRange()
+                    Content()
                 }
             }
         }
@@ -46,59 +46,6 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun LazyColumnRange(viewModel: MainViewModel = MainViewModel()) {
-    val list by viewModel.uiState.collectAsState(initial = emptyList())
+fun Content(viewModel: MainViewModel = MainViewModel()) {
 
-    Box(
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            itemsIndexed(list) { index, item ->
-                Element(item) {
-                    viewModel.upload(index)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun Element(item: ItemUi, upload: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(350.dp)
-            .padding(16.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(if (item.upload) Color.Green else Color.White)
-                .clickable { if (!item.upload) upload() }
-        ) {
-            Text(
-                text = item.text,
-                Modifier
-                    .wrapContentSize(),
-                color = Color.Black
-            )
-            if (item.upload)
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .width(50.dp)
-                        .height(50.dp)
-                        .align(Alignment.BottomEnd)
-                )
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    LazyColumnRangeTheme {
-        LazyColumnRange()
-    }
 }
