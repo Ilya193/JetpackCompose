@@ -1,4 +1,4 @@
-package ru.kraz.lazycolumnrange.ui.theme
+package ru.kraz.lazycolumnrange.presentation.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

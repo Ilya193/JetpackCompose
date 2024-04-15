@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">LazyColumnRange</string>
+    <string name="note_title">Название заметки</string>
+    <string name="cancel">Отменить</string>
+    <string name="add">Добавить</string>
+    <string name="title_app">Заметки</string>
 </resources>

@@ -1,4 +1,4 @@
-package ru.kraz.lazycolumnrange
+package ru.kraz.lazycolumnrange.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,23 +9,40 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import ru.kraz.lazycolumnrange.domain.CompletedNoteUseCase
+import ru.kraz.lazycolumnrange.domain.DeleteNoteUseCase
+import ru.kraz.lazycolumnrange.domain.FetchNotesUseCase
+import ru.kraz.lazycolumnrange.domain.InsertNoteUseCase
+import ru.kraz.lazycolumnrange.domain.NoteDomain
+import ru.kraz.lazycolumnrange.presentation.Mappers.toNoteUi
 import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
+    private val fetchNotesUseCase: FetchNotesUseCase,
+    private val insertNoteUseCase: InsertNoteUseCase,
+    private val deleteNoteUseCase: DeleteNoteUseCase,
+    private val completedNoteUseCase: CompletedNoteUseCase,
     private val dispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
-    private val notes = mutableListOf<NoteUi>()
-
     private val _uiState = MutableStateFlow(NotesUiState())
     val uiState: StateFlow<NotesUiState> get() = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch(dispatcher) {
+            fetchNotesUseCase().collect {
+                _uiState.value = NotesUiState(it.map { it.toNoteUi() })
+            }
+        }
+    }
 
     fun action(event: Event) = viewModelScope.launch(dispatcher) {
         when (event) {
             is Event.ShowDialog -> showDialog(event.showDialog)
             is Event.AddNote -> addNote(event.title)
             is Event.DeleteNote -> deleteNote(event.note)
+            is Event.CompletedNote -> completedNote(event.note)
         }
     }
 
@@ -35,14 +52,16 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    private fun addNote(title: String) {
-        notes.add(NoteUi(id = notes.size - 1, title = title))
-        _uiState.value = NotesUiState(notes = notes.toList())
+    private suspend fun addNote(title: String) {
+        insertNoteUseCase(NoteDomain(0, title))
     }
 
-    private fun deleteNote(note: NoteUi) {
-        notes.remove(note)
-        _uiState.value = NotesUiState(notes = notes.toList())
+    private suspend fun deleteNote(note: NoteUi) {
+        deleteNoteUseCase(note.toNoteDomain())
+    }
+
+    private suspend fun completedNote(note: NoteUi) {
+        completedNoteUseCase(note.copy(isCompleted = !note.isCompleted).toNoteDomain())
     }
 }
 
@@ -50,6 +69,7 @@ sealed interface Event {
     data class ShowDialog(val showDialog: Boolean) : Event
     data class AddNote(val title: String) : Event
     data class DeleteNote(val note: NoteUi) : Event
+    data class CompletedNote(val note: NoteUi) : Event
 }
 
 data class NotesUiState(
@@ -57,8 +77,3 @@ data class NotesUiState(
     val showDialog: Boolean = false
 )
 
-data class NoteUi(
-    val id: Int,
-    val title: String,
-    val isCompleted: Boolean = false
-)

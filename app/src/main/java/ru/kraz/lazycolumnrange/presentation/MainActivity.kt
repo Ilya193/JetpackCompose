@@ -1,12 +1,13 @@
-package ru.kraz.lazycolumnrange
+package ru.kraz.lazycolumnrange.presentation
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -16,24 +17,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
-import androidx.compose.material3.DismissValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.SwipeToDismiss
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -50,22 +49,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
-import ru.kraz.lazycolumnrange.ui.theme.LazyColumnRangeTheme
-import ru.kraz.lazycolumnrange.ui.theme.darkOrange
+import ru.kraz.lazycolumnrange.R
+import ru.kraz.lazycolumnrange.presentation.ui.theme.LazyColumnRangeTheme
+import ru.kraz.lazycolumnrange.presentation.ui.theme.darkOrange
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContent {
             LazyColumnRangeTheme {
@@ -84,13 +84,13 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun Content(viewModel: MainViewModel = hiltViewModel()) {
     val interactionSource = remember { MutableInteractionSource() }
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
             TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = darkOrange),
-                title = { Text(text = "Заметки") },
+                title = { Text(text = stringResource(R.string.title_app)) },
                 actions = {
                     Image(
                         modifier = Modifier.clickable(interactionSource, null) {
@@ -106,10 +106,9 @@ fun Content(viewModel: MainViewModel = hiltViewModel()) {
             items(uiState.notes, key = { item -> item.id }) { note ->
                 NoteItem(
                     modifier = Modifier.animateItemPlacement(animationSpec = tween(250)),
-                    note = note
-                ) {
-                    viewModel.action(Event.DeleteNote(note))
-                }
+                    note = note,
+                    delete = { viewModel.action(Event.DeleteNote(note)) },
+                    completed = { viewModel.action(Event.CompletedNote(note)) })
                 HorizontalDivider()
             }
         }
@@ -126,7 +125,7 @@ fun Content(viewModel: MainViewModel = hiltViewModel()) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NoteItem(modifier: Modifier, note: NoteUi, delete: () -> Unit) {
+fun NoteItem(modifier: Modifier, note: NoteUi, delete: () -> Unit, completed: () -> Unit) {
     val dismissState = rememberSwipeToDismissBoxState(confirmValueChange = {
         if (it == SwipeToDismissBoxValue.EndToStart) delete()
         true
@@ -154,13 +153,21 @@ fun NoteItem(modifier: Modifier, note: NoteUi, delete: () -> Unit) {
             modifier = modifier
                 .fillMaxWidth()
                 .height(50.dp)
-                .padding(start = 16.dp)
+                .clickable(onClick = completed)
         ) {
             Text(
-                modifier = Modifier.align(Alignment.CenterStart),
+                modifier = Modifier.align(Alignment.CenterStart).padding(start = 16.dp),
                 text = note.title,
                 style = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.Normal)
             )
+
+            if (note.isCompleted) {
+                Image(
+                    modifier = Modifier.align(Alignment.CenterEnd).padding(end = 16.dp),
+                    imageVector = Icons.Default.Done,
+                    contentDescription = null
+                )
+            }
         }
     }
 }
@@ -180,7 +187,7 @@ fun DialogAddNote(add: (String) -> Unit, onDismiss: () -> Unit) {
             shape = RoundedCornerShape(16.dp),
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                Text(modifier = Modifier.align(Alignment.TopCenter), text = "Название заметки")
+                Text(modifier = Modifier.align(Alignment.TopCenter), text = stringResource(R.string.note_title))
 
                 OutlinedTextField(
                     modifier = Modifier.align(Alignment.Center),
@@ -203,13 +210,13 @@ fun DialogAddNote(add: (String) -> Unit, onDismiss: () -> Unit) {
                         onClick = onDismiss,
                         colors = ButtonDefaults.buttonColors(containerColor = darkOrange)
                     ) {
-                        Text(text = "Отменить", style = TextStyle(color = Color.Black))
+                        Text(text = stringResource(R.string.cancel), style = TextStyle(color = Color.Black))
                     }
                     Button(
                         onClick = { add(note) },
                         colors = ButtonDefaults.buttonColors(containerColor = darkOrange)
                     ) {
-                        Text(text = "Добавить", style = TextStyle(color = Color.Black))
+                        Text(text = stringResource(R.string.add), style = TextStyle(color = Color.Black))
                     }
                 }
             }
