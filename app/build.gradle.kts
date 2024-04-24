@@ -67,5 +67,7 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
-    implementation("io.coil-kt:coil-compose:2.5.0")
+    implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation("io.insert-koin:koin-androidx-compose:3.5.6")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
 }
