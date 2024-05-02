@@ -3,6 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
+    id("app.cash.sqldelight")
 }
 
 android {
@@ -42,7 +43,7 @@ android {
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.12"
+        kotlinCompilerExtensionVersion = "1.5.13"
     }
     packaging {
         resources {
@@ -80,4 +81,15 @@ dependencies {
     annotationProcessor(libs.androidx.room.compiler)
     ksp(libs.room.compiler)
     implementation(libs.room.ktx)
+
+    implementation("app.cash.sqldelight:android-driver:2.0.2")
+    implementation("app.cash.sqldelight:coroutines-extensions:2.0.0")
+}
+
+sqldelight {
+    databases {
+        create("AppDatabase") {
+            packageName.set("ru.kraz")
+        }
+    }
 }

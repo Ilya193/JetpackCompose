@@ -53,7 +53,7 @@ class MainViewModel @Inject constructor(
     }
 
     private suspend fun addNote(title: String) {
-        insertNoteUseCase(NoteDomain(0, title))
+        insertNoteUseCase(title)
     }
 
     private suspend fun deleteNote(note: NoteUi) {

@@ -2,13 +2,18 @@ package ru.kraz.lazycolumnrange.di
 
 import android.content.Context
 import androidx.room.Room
+import app.cash.sqldelight.db.SqlDriver
+import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.components.ViewModelComponent
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import ru.kraz.lazycolumnrange.data.NotesDao
-import ru.kraz.lazycolumnrange.data.NotesDb
+import ru.kraz.AppDatabase
+import ru.kraz.lazycolumnrange.data.NotesRepositoryImpl
+import ru.kraz.lazycolumnrange.domain.NotesRepository
 import javax.inject.Singleton
 
 @Module
@@ -17,10 +22,16 @@ class DatabaseModule {
 
     @Singleton
     @Provides
-    fun provideNotesDatabase(@ApplicationContext context: Context): NotesDb =
-        Room.databaseBuilder(context, NotesDb::class.java, "notes.db").build()
+    fun provideSqlDriver(@ApplicationContext context: Context): SqlDriver =
+        AndroidSqliteDriver(AppDatabase.Schema, context, "notes.db")
 
-    @Singleton
+    // COMPILE ERROR
+    /*@Singleton
     @Provides
-    fun provideNotesDao(db: NotesDb): NotesDao = db.notesDao()
+    fun provideAppDatabase(sqlDriver: SqlDriver): AppDatabase =
+        AppDatabase(sqlDriver) */
+
+    @Provides
+    fun provideNotesRepository(sqlDriver: SqlDriver): NotesRepository =
+        NotesRepositoryImpl(AppDatabase(sqlDriver))
 }

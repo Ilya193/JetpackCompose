@@ -6,5 +6,5 @@ interface NotesRepository {
     suspend fun fetchNotes(): Flow<List<NoteDomain>>
     suspend fun deleteNote(note: NoteDomain)
     suspend fun completedNote(note: NoteDomain)
-    suspend fun insertNote(note: NoteDomain)
+    suspend fun insertNote(title: String)
 }
