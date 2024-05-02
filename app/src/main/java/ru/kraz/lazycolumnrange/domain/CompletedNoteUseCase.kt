@@ -1,6 +1,8 @@
 package ru.kraz.lazycolumnrange.domain
 
-class CompletedNoteUseCase(
+import javax.inject.Inject
+
+class CompletedNoteUseCase @Inject constructor(
     private val repository: NotesRepository
 ) {
 

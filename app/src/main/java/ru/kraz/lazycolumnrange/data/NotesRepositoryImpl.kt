@@ -7,8 +7,9 @@ import kotlinx.coroutines.flow.onEach
 import ru.kraz.lazycolumnrange.data.Mappers.toNoteDb
 import ru.kraz.lazycolumnrange.domain.NoteDomain
 import ru.kraz.lazycolumnrange.domain.NotesRepository
+import javax.inject.Inject
 
-class NotesRepositoryImpl(
+class NotesRepositoryImpl @Inject constructor(
     private val dao: NotesDao,
 ) : NotesRepository {
     override suspend fun fetchNotes(): Flow<List<NoteDomain>> = dao.fetchNotes().map {
