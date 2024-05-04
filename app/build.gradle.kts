@@ -4,6 +4,7 @@ plugins {
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
     id("app.cash.sqldelight")
+    id("kotlin-parcelize")
 }
 
 android {
@@ -84,6 +85,12 @@ dependencies {
 
     implementation("app.cash.sqldelight:android-driver:2.0.2")
     implementation("app.cash.sqldelight:coroutines-extensions:2.0.0")
+
+    implementation("cafe.adriel.voyager:voyager-navigator:1.0.0")
+    implementation("cafe.adriel.voyager:voyager-screenmodel:1.0.0")
+    implementation("cafe.adriel.voyager:voyager-koin:1.0.0")
+
+    implementation("com.github.terrakok:modo-compose:0.7.1")
 }
 
 sqldelight {

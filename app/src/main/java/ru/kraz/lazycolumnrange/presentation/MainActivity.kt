@@ -1,14 +1,16 @@
+@file:OptIn(ExperimentalFoundationApi::class)
+
 package ru.kraz.lazycolumnrange.presentation
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -40,7 +42,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,14 +58,44 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.github.terrakok.modo.Modo
+import com.github.terrakok.modo.stack.StackNavModel
+import com.github.terrakok.modo.stack.StackScreen
 import dagger.hilt.android.AndroidEntryPoint
 import ru.kraz.lazycolumnrange.R
+import ru.kraz.lazycolumnrange.presentation.modo.SampleScreen
+import ru.kraz.lazycolumnrange.presentation.modo.SampleStack
 import ru.kraz.lazycolumnrange.presentation.ui.theme.LazyColumnRangeTheme
 import ru.kraz.lazycolumnrange.presentation.ui.theme.darkOrange
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    private var rootScreen: StackScreen? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
+        super.onCreate(savedInstanceState)
+        rootScreen = Modo.init(savedInstanceState, rootScreen) {
+            SampleStack(StackNavModel(SampleScreen()))
+        }
+        setContent {
+            LazyColumnRangeTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    rootScreen?.Content()
+                }
+            }
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        Modo.save(outState, rootScreen)
+        super.onSaveInstanceState(outState)
+    }
+
+    /*override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContent {
@@ -73,16 +104,17 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
+                    //Navigator(MainScreen())
                     Content()
                 }
             }
         }
-    }
+    }*/
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun Content(viewModel: MainViewModel = hiltViewModel()) {
+fun Content(onLongClick: () -> Unit, viewModel: MainViewModel = hiltViewModel()) {
     val interactionSource = remember { MutableInteractionSource() }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -107,6 +139,7 @@ fun Content(viewModel: MainViewModel = hiltViewModel()) {
                 NoteItem(
                     modifier = Modifier.animateItemPlacement(animationSpec = tween(250)),
                     note = note,
+                    onLongClick = onLongClick,
                     delete = { viewModel.action(Event.DeleteNote(note)) },
                     completed = { viewModel.action(Event.CompletedNote(note)) })
                 HorizontalDivider()
@@ -125,7 +158,13 @@ fun Content(viewModel: MainViewModel = hiltViewModel()) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NoteItem(modifier: Modifier, note: NoteUi, delete: () -> Unit, completed: () -> Unit) {
+fun NoteItem(
+    modifier: Modifier,
+    note: NoteUi,
+    onLongClick: () -> Unit,
+    delete: () -> Unit,
+    completed: () -> Unit
+) {
     val dismissState = rememberSwipeToDismissBoxState(confirmValueChange = {
         if (it == SwipeToDismissBoxValue.EndToStart) delete()
         true
@@ -153,17 +192,23 @@ fun NoteItem(modifier: Modifier, note: NoteUi, delete: () -> Unit, completed: ()
             modifier = modifier
                 .fillMaxWidth()
                 .height(50.dp)
-                .clickable(onClick = completed)
+                .combinedClickable(remember {
+                    MutableInteractionSource()
+                }, indication = null, onClick = completed, onLongClick = onLongClick)
         ) {
             Text(
-                modifier = Modifier.align(Alignment.CenterStart).padding(start = 16.dp),
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(start = 16.dp),
                 text = note.title,
                 style = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.Normal)
             )
 
             if (note.isCompleted) {
                 Image(
-                    modifier = Modifier.align(Alignment.CenterEnd).padding(end = 16.dp),
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(end = 16.dp),
                     imageVector = Icons.Default.Done,
                     contentDescription = null
                 )
@@ -187,7 +232,10 @@ fun DialogAddNote(add: (String) -> Unit, onDismiss: () -> Unit) {
             shape = RoundedCornerShape(16.dp),
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                Text(modifier = Modifier.align(Alignment.TopCenter), text = stringResource(R.string.note_title))
+                Text(
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    text = stringResource(R.string.note_title)
+                )
 
                 OutlinedTextField(
                     modifier = Modifier.align(Alignment.Center),
@@ -210,13 +258,19 @@ fun DialogAddNote(add: (String) -> Unit, onDismiss: () -> Unit) {
                         onClick = onDismiss,
                         colors = ButtonDefaults.buttonColors(containerColor = darkOrange)
                     ) {
-                        Text(text = stringResource(R.string.cancel), style = TextStyle(color = Color.Black))
+                        Text(
+                            text = stringResource(R.string.cancel),
+                            style = TextStyle(color = Color.Black)
+                        )
                     }
                     Button(
                         onClick = { add(note) },
                         colors = ButtonDefaults.buttonColors(containerColor = darkOrange)
                     ) {
-                        Text(text = stringResource(R.string.add), style = TextStyle(color = Color.Black))
+                        Text(
+                            text = stringResource(R.string.add),
+                            style = TextStyle(color = Color.Black)
+                        )
                     }
                 }
             }
