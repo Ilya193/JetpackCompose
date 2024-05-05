@@ -69,9 +69,6 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
-    implementation("com.arkivanov.decompose:decompose:3.0.0")
-    implementation("com.arkivanov.decompose:extensions-compose:3.0.0")
-    implementation("com.arkivanov.essenty:lifecycle-coroutines:2.0.0")
-
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation("androidx.compose.material:material:1.6.7")
 }
