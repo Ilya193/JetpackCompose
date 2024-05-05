@@ -4,12 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -17,209 +14,135 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Done
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import dagger.hilt.android.AndroidEntryPoint
+import com.arkivanov.decompose.defaultComponentContext
+import com.arkivanov.decompose.extensions.compose.stack.Children
+import com.arkivanov.decompose.extensions.compose.stack.animation.slide
+import com.arkivanov.decompose.extensions.compose.stack.animation.stackAnimation
 import ru.kraz.lazycolumnrange.R
+import ru.kraz.lazycolumnrange.presentation.RootComponent.Child
 import ru.kraz.lazycolumnrange.presentation.ui.theme.LazyColumnRangeTheme
-import ru.kraz.lazycolumnrange.presentation.ui.theme.darkOrange
 
-@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        val root = DefaultRootComponent(defaultComponentContext())
         setContent {
             LazyColumnRangeTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    Content()
+                    Scaffold(
+                        modifier = Modifier.systemBarsPadding(),
+                        bottomBar = {
+                            Children(
+                                stack = root.bottomStack,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp)
+                            ) {
+                                when (val instance = it.instance) {
+                                    is RootComponent.Bottom.Menu -> {
+                                        BottomContainer(instance.component)
+                                    }
+                                }
+                            }
+                        }
+                    ) { padding ->
+                        Content(component = root, modifier = Modifier.padding(padding))
+                    }
                 }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun Content(viewModel: MainViewModel = hiltViewModel()) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = darkOrange),
-                title = { Text(text = stringResource(R.string.title_app)) },
-                actions = {
-                    Image(
-                        modifier = Modifier.clickable(interactionSource, null) {
-                            viewModel.action(Event.ShowDialog(true))
-                        },
-                        imageVector = Icons.Filled.Add,
-                        contentDescription = null
-                    )
-                })
-        }
-    ) { padding ->
-        LazyColumn(modifier = Modifier.padding(padding)) {
-            items(uiState.notes, key = { item -> item.id }) { note ->
-                NoteItem(
-                    modifier = Modifier.animateItemPlacement(animationSpec = tween(250)),
-                    note = note,
-                    delete = { viewModel.action(Event.DeleteNote(note)) },
-                    completed = { viewModel.action(Event.CompletedNote(note)) })
-                HorizontalDivider()
-            }
-        }
-
-        if (uiState.showDialog) {
-            DialogAddNote(
-                add = {
-                    if (it.isNotEmpty()) viewModel.action(Event.AddNote(it))
-                },
-                onDismiss = { viewModel.action(Event.ShowDialog(false)) })
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun NoteItem(modifier: Modifier, note: NoteUi, delete: () -> Unit, completed: () -> Unit) {
-    val dismissState = rememberSwipeToDismissBoxState(confirmValueChange = {
-        if (it == SwipeToDismissBoxValue.EndToStart) delete()
-        true
-    })
-
-    SwipeToDismissBox(
-        enableDismissFromStartToEnd = false,
-        state = dismissState,
-        backgroundContent = {
-            if (dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                ) {
-                    Image(
-                        modifier = Modifier.align(Alignment.CenterEnd),
-                        imageVector = Icons.Filled.Delete,
-                        contentDescription = null,
-                        colorFilter = ColorFilter.tint(Color.Red)
-                    )
-                }
-            }
-        }) {
+fun Content(component: RootComponent, modifier: Modifier) {
+    Children(
+        stack = component.childStack,
+        modifier = modifier
+            .fillMaxSize()
+    ) {
         Box(
-            modifier = modifier
-                .fillMaxWidth()
-                .height(50.dp)
-                .clickable(onClick = completed)
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                modifier = Modifier.align(Alignment.CenterStart).padding(start = 16.dp),
-                text = note.title,
-                style = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.Normal)
-            )
+            when (val instance = it.instance) {
+                is Child.Products -> {
+                    Children(
+                        stack = instance.component.childStack,
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        animation = stackAnimation(slide())
+                    ) {
+                        when (val container = it.instance) {
+                            is ProductsComponent.Child.List -> Text(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Red)
+                                    .clickable {
+                                        container.component.onClick()
+                                    }, text = "Products"
+                            )
 
-            if (note.isCompleted) {
-                Image(
-                    modifier = Modifier.align(Alignment.CenterEnd).padding(end = 16.dp),
-                    imageVector = Icons.Default.Done,
-                    contentDescription = null
-                )
+                            is ProductsComponent.Child.Details -> Text(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Yellow)
+                                    .clickable {
+                                        container.component.pop()
+                                    },
+                                text = "Details"
+                            )
+                        }
+                    }
+                }
+
+                is Child.Basket -> Text(text = "Basket")
+                is Child.Profile -> Text(text = "Profile")
             }
         }
     }
 }
 
 @Composable
-fun DialogAddNote(add: (String) -> Unit, onDismiss: () -> Unit) {
-    var note by remember {
-        mutableStateOf("")
-    }
-
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
+fun BottomContainer(component: MenuComponent) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceAround,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Image(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .padding(16.dp),
-            shape = RoundedCornerShape(16.dp),
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                Text(modifier = Modifier.align(Alignment.TopCenter), text = stringResource(R.string.note_title))
-
-                OutlinedTextField(
-                    modifier = Modifier.align(Alignment.Center),
-                    value = note,
-                    onValueChange = {
-                        note = it
-                    },
-                    placeholder = {
-                        Text(text = "dalvik")
-                    })
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
-                        .align(Alignment.BottomCenter),
-                    horizontalArrangement = Arrangement.SpaceAround
-                ) {
-                    Button(
-                        onClick = onDismiss,
-                        colors = ButtonDefaults.buttonColors(containerColor = darkOrange)
-                    ) {
-                        Text(text = stringResource(R.string.cancel), style = TextStyle(color = Color.Black))
-                    }
-                    Button(
-                        onClick = { add(note) },
-                        colors = ButtonDefaults.buttonColors(containerColor = darkOrange)
-                    ) {
-                        Text(text = stringResource(R.string.add), style = TextStyle(color = Color.Black))
-                    }
-                }
-            }
-        }
+                .clickable { component.onItemClicked(1) },
+            painter = painterResource(id = R.drawable.ic_clear),
+            contentDescription = null
+        )
+        Image(
+            modifier = Modifier
+                .clickable { component.onItemClicked(2) },
+            painter = painterResource(id = R.drawable.ic_clear),
+            contentDescription = null
+        )
+        Image(
+            modifier = Modifier
+                .clickable { component.onItemClicked(3) },
+            painter = painterResource(id = R.drawable.ic_clear),
+            contentDescription = null
+        )
     }
 }

@@ -1,8 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("com.google.dagger.hilt.android")
-    id("com.google.devtools.ksp")
+    kotlin("plugin.serialization") version "1.9.22"
 }
 
 android {
@@ -42,7 +41,7 @@ android {
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.12"
+        kotlinCompilerExtensionVersion = "1.5.13"
     }
     packaging {
         resources {
@@ -70,14 +69,9 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
-    implementation(libs.coil.compose)
+    implementation("com.arkivanov.decompose:decompose:3.0.0")
+    implementation("com.arkivanov.decompose:extensions-compose:3.0.0")
+    implementation("com.arkivanov.essenty:lifecycle-coroutines:2.0.0")
 
-    implementation(libs.androidx.hilt.navigation.compose)
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
-
-    implementation(libs.androidx.room.runtime)
-    annotationProcessor(libs.androidx.room.compiler)
-    ksp(libs.room.compiler)
-    implementation(libs.room.ktx)
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 }
