@@ -59,6 +59,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.terrakok.modo.Modo
+import com.github.terrakok.modo.RootScreen
 import com.github.terrakok.modo.stack.StackNavModel
 import com.github.terrakok.modo.stack.StackScreen
 import dagger.hilt.android.AndroidEntryPoint
@@ -70,13 +71,13 @@ import ru.kraz.lazycolumnrange.presentation.ui.theme.darkOrange
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    private var rootScreen: StackScreen? = null
+    private var rootScreen: RootScreen<SampleStack>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         rootScreen = Modo.init(savedInstanceState, rootScreen) {
-            SampleStack(StackNavModel(SampleScreen()))
+            SampleStack(SampleScreen())
         }
         setContent {
             LazyColumnRangeTheme {
@@ -112,56 +113,11 @@ class MainActivity : ComponentActivity() {
     }*/
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
-@Composable
-fun Content(onLongClick: () -> Unit, viewModel: MainViewModel = hiltViewModel()) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = darkOrange),
-                title = { Text(text = stringResource(R.string.title_app)) },
-                actions = {
-                    Image(
-                        modifier = Modifier.clickable(interactionSource, null) {
-                            viewModel.action(Event.ShowDialog(true))
-                        },
-                        imageVector = Icons.Filled.Add,
-                        contentDescription = null
-                    )
-                })
-        }
-    ) { padding ->
-        LazyColumn(modifier = Modifier.padding(padding)) {
-            items(uiState.notes, key = { item -> item.id }) { note ->
-                NoteItem(
-                    modifier = Modifier.animateItemPlacement(animationSpec = tween(250)),
-                    note = note,
-                    onLongClick = onLongClick,
-                    delete = { viewModel.action(Event.DeleteNote(note)) },
-                    completed = { viewModel.action(Event.CompletedNote(note)) })
-                HorizontalDivider()
-            }
-        }
-
-        if (uiState.showDialog) {
-            DialogAddNote(
-                add = {
-                    if (it.isNotEmpty()) viewModel.action(Event.AddNote(it))
-                },
-                onDismiss = { viewModel.action(Event.ShowDialog(false)) })
-        }
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NoteItem(
     modifier: Modifier,
     note: NoteUi,
-    onLongClick: () -> Unit,
     delete: () -> Unit,
     completed: () -> Unit
 ) {
@@ -192,9 +148,7 @@ fun NoteItem(
             modifier = modifier
                 .fillMaxWidth()
                 .height(50.dp)
-                .combinedClickable(remember {
-                    MutableInteractionSource()
-                }, indication = null, onClick = completed, onLongClick = onLongClick)
+                .clickable(onClick = completed)
         ) {
             Text(
                 modifier = Modifier

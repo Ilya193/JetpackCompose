@@ -90,7 +90,7 @@ dependencies {
     implementation("cafe.adriel.voyager:voyager-screenmodel:1.0.0")
     implementation("cafe.adriel.voyager:voyager-koin:1.0.0")
 
-    implementation("com.github.terrakok:modo-compose:0.7.1")
+    implementation("com.github.terrakok:modo-compose:0.8.0")
 }
 
 sqldelight {
