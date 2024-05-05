@@ -5,6 +5,7 @@ plugins {
     id("com.google.devtools.ksp")
     id("app.cash.sqldelight")
     id("kotlin-parcelize")
+    kotlin("plugin.serialization") version "1.9.22"
 }
 
 android {
@@ -86,11 +87,11 @@ dependencies {
     implementation("app.cash.sqldelight:android-driver:2.0.2")
     implementation("app.cash.sqldelight:coroutines-extensions:2.0.0")
 
-    implementation("cafe.adriel.voyager:voyager-navigator:1.0.0")
-    implementation("cafe.adriel.voyager:voyager-screenmodel:1.0.0")
-    implementation("cafe.adriel.voyager:voyager-koin:1.0.0")
+    implementation("com.arkivanov.decompose:decompose:3.0.0")
+    implementation("com.arkivanov.decompose:extensions-compose:3.0.0")
+    implementation("com.arkivanov.essenty:lifecycle-coroutines:2.0.0")
 
-    implementation("com.github.terrakok:modo-compose:0.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 }
 
 sqldelight {

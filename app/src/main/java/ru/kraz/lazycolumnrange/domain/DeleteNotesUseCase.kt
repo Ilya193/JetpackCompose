@@ -2,7 +2,7 @@ package ru.kraz.lazycolumnrange.domain
 
 import javax.inject.Inject
 
-class DeleteNoteUseCase @Inject constructor(
+class DeleteNotesUseCase @Inject constructor(
     private val repository: NotesRepository
 ) {
 

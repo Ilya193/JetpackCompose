@@ -9,20 +9,19 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import ru.kraz.lazycolumnrange.domain.CompletedNoteUseCase
-import ru.kraz.lazycolumnrange.domain.DeleteNoteUseCase
+import ru.kraz.lazycolumnrange.domain.CompletedNotesUseCase
+import ru.kraz.lazycolumnrange.domain.DeleteNotesUseCase
 import ru.kraz.lazycolumnrange.domain.FetchNotesUseCase
-import ru.kraz.lazycolumnrange.domain.InsertNoteUseCase
-import ru.kraz.lazycolumnrange.domain.NoteDomain
+import ru.kraz.lazycolumnrange.domain.InsertNotesUseCase
 import ru.kraz.lazycolumnrange.presentation.Mappers.toNoteUi
 import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val fetchNotesUseCase: FetchNotesUseCase,
-    private val insertNoteUseCase: InsertNoteUseCase,
-    private val deleteNoteUseCase: DeleteNoteUseCase,
-    private val completedNoteUseCase: CompletedNoteUseCase,
+    private val insertNotesUseCase: InsertNotesUseCase,
+    private val deleteNotesUseCase: DeleteNotesUseCase,
+    private val completedNoteUseCase: CompletedNotesUseCase,
     private val dispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
@@ -53,11 +52,11 @@ class MainViewModel @Inject constructor(
     }
 
     private suspend fun addNote(title: String) {
-        insertNoteUseCase(title)
+        insertNotesUseCase(title)
     }
 
     private suspend fun deleteNote(note: NoteUi) {
-        deleteNoteUseCase(note.toNoteDomain())
+        deleteNotesUseCase(note.toNoteDomain())
     }
 
     private suspend fun completedNote(note: NoteUi) {
