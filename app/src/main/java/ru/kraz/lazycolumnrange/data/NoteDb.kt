@@ -9,7 +9,8 @@ data class NoteDb(
     @PrimaryKey(autoGenerate = true)
     val id: Int,
     val title: String,
-    val isCompleted: Boolean = false
+    val isCompleted: Boolean = false,
+    val counter: Int? = null
 ) {
     fun toNoteDomain(): NoteDomain = NoteDomain(id, title, isCompleted)
 }
