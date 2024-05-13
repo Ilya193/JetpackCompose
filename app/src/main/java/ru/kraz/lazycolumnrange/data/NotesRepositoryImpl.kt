@@ -27,6 +27,7 @@ class NotesRepositoryImpl(
     }
 
     override suspend fun completedNote(note: NoteDomain) {
+        database.appDatabaseQueries.statistic(if (note.counter == null) 1 else note.counter + 1, note.id)
         database.appDatabaseQueries.competed(note.id)
     }
 

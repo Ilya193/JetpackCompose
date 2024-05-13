@@ -4,4 +4,4 @@ import ru.kraz.lazycolumnrange.Note
 import ru.kraz.lazycolumnrange.domain.NoteDomain
 
 fun Note.toNoteDomain(): NoteDomain =
-    NoteDomain(id, title, isCompleted)
+    NoteDomain(id, title, isCompleted, counter)
