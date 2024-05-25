@@ -89,8 +89,11 @@ dependencies {
     implementation("cafe.adriel.voyager:voyager-navigator:1.0.0")
     implementation("cafe.adriel.voyager:voyager-screenmodel:1.0.0")
     implementation("cafe.adriel.voyager:voyager-koin:1.0.0")
+    implementation("cafe.adriel.voyager:voyager-tab-navigator:1.0.0")
 
     implementation("com.github.terrakok:modo-compose:0.8.0")
+
+    implementation("androidx.navigation:navigation-compose:2.7.7")
 }
 
 sqldelight {
