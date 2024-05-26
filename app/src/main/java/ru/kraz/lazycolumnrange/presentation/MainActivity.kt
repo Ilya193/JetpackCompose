@@ -106,8 +106,12 @@ class MainActivity : ComponentActivity() {
                                     TabItem(tab = TabProfile)
                                 }
                             }
-                        ) {
-                            CurrentTab()
+                        ) { innerPadding ->
+                            Box(modifier = Modifier
+                                .fillMaxSize()
+                                .padding(innerPadding)) {
+                                CurrentTab()
+                            }
                         }
                     }
                 }
