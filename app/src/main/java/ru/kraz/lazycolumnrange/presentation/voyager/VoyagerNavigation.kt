@@ -1,12 +1,9 @@
 package ru.kraz.lazycolumnrange.presentation.voyager
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
@@ -18,10 +15,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.model.StateScreenModel
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
@@ -109,7 +103,7 @@ class DetailsScreen : Screen {
 
 @Composable
 fun CommentItem(comment: CommentUi, onClick: () -> Unit) {
-    println("s149 CALL CommentItem")
+    println("s149 CALL $comment")
     Text(text = comment.id.toString())
     Text(text = comment.comment)
     Text(text = comment.date.toString(), modifier = Modifier.clickable { onClick() })
