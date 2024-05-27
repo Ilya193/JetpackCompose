@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
@@ -29,13 +30,15 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 
 @Immutable
 data class CommentUi(
     val id: Int,
     val comment: String,
-    val date: Date = Date()
+    val date: String
 )
 
 data class DetailsUiState(
@@ -46,9 +49,11 @@ data class DetailsUiState(
 class DetailsScreenModel(
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : StateScreenModel<DetailsUiState>(DetailsUiState()) {
+
+    private val sdf = SimpleDateFormat("dd/M/yyyy HH:MM:ss", Locale.getDefault())
     init {
         screenModelScope.launch(dispatcher) {
-            mutableState.value = DetailsUiState(CommentUi(0, "Comment"))
+            mutableState.value = DetailsUiState(CommentUi(0, "Comment", sdf.format(Date())))
         }
     }
 
@@ -60,7 +65,7 @@ class DetailsScreenModel(
 
     fun changeComment() {
         screenModelScope.launch(dispatcher) {
-            mutableState.update { it.copy(comment = CommentUi(0, "New comment")) }
+            mutableState.update { it.copy(comment = CommentUi(0, "New comment", sdf.format(Date()))) }
         }
     }
 }
@@ -89,7 +94,9 @@ class DetailsScreen : Screen {
 
         Column(modifier = Modifier.fillMaxSize()) {
             state.comment?.let {
-                CommentItem(comment = it, screenModel::changeComment)
+                CommentItem(comment = it, onClick = remember {
+                    screenModel::changeComment
+                })
             }
             Button(onClick = screenModel::subscribe) {
                 if (state.isSubscribed)
@@ -103,10 +110,9 @@ class DetailsScreen : Screen {
 
 @Composable
 fun CommentItem(comment: CommentUi, onClick: () -> Unit) {
-    println("s149 CALL $comment")
     Text(text = comment.id.toString())
     Text(text = comment.comment)
-    Text(text = comment.date.toString(), modifier = Modifier.clickable { onClick() })
+    Text(text = comment.date, modifier = Modifier.clickable { onClick() })
 }
 
 class ProfileScreen : Screen {
